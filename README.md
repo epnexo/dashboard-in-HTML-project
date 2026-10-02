@@ -37,6 +37,11 @@ across many sources. This approach sits alongside them and fits when you need to
 - keep full control over layout, branding and the logic behind every number;
 - document the data cleaning next to the results.
 
+To make the result more robust, the same run also produces an **Excel workbook built with Power
+Query and Power Pivot**. The HTML file is the quick, shareable view; the workbook gives analysts a
+refreshable data model with DAX measures, PivotTables and slicers they can extend with the tools
+they already know. Both come from the same cleaned data, so the numbers match.
+
 > [!IMPORTANT]
 > **It is a snapshot.** The dashboard shows the data exactly as it was when the report was
 > generated. Filters and charts are interactive, but the numbers do not refresh by themselves:
