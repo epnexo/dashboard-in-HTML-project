@@ -1,0 +1,9 @@
+{
+  "_note": "Report settings. Edit the values and run again. Use null to hide a target.",
+  "currency_symbol": "A$",
+  "currency_name": "Australian dollar",
+  "annual_revenue_target": null,
+  "success_rate_target_pct": null,
+  "failure_threshold_pct": 15,
+  "inactivity_days": 90
+}

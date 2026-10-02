@@ -1,0 +1,31 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cleaning report</title><style>
+body{font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;margin:0;background:#f4f6f8;color:#0b1220}
+.w{max-width:1100px;margin:0 auto;padding:28px 16px 48px} h1{font-size:24px;margin:0 0 4px} h2{font-size:16px;margin:28px 0 10px}
+p{color:#4a5568;margin:0 0 8px} .kp{display:flex;flex-wrap:wrap;gap:12px;margin:18px 0}
+.k{background:#fff;border:1px solid rgba(9,18,41,.1);border-radius:12px;padding:14px 18px;min-width:160px}
+.k b{display:block;font-size:24px} .k span{color:#4a5568;font-size:12.5px}
+.t{background:#fff;border:1px solid rgba(9,18,41,.1);border-radius:12px;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px} th{text-align:left;color:#4a5568;font-weight:500;font-size:12px}
+th,td{padding:8px 12px;border-bottom:1px solid #e4e8ee;vertical-align:top} tr:last-child td{border-bottom:0}
+.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap} .ej{color:#4a5568;font-family:Consolas,monospace;font-size:12px}
+</style></head><body><div class="w">
+<h1>Cleaning report</h1>
+<p>File: <b>telecom_transactions_au_dirty.csv</b> · Run: 2026-10-02 16:16</p>
+<div class="kp">
+<div class="k"><b>4,288</b><span>rows in the original file</span></div>
+<div class="k"><b>55</b><span>duplicates removed</span></div>
+<div class="k"><b>4,233</b><span>rows in the clean file</span></div>
+<div class="k"><b>15,191</b><span>corrections recorded</span></div>
+</div>
+<h2>What was found and what was done</h2>
+<div class="t"><table><thead><tr><th>Column</th><th>Issue found</th><th class="n">Rows</th><th>Examples of the original value</th><th>What was done</th></tr></thead><tbody><tr><td>txn_date</td><td>Non-standard date format</td><td class="n">4,055</td><td class="ej">18 May 2024 · 2024.02.02 · 2024.05.22 · 2024.10.08 · 26 Nov 2024</td><td>Converted to YYYY-MM-DD</td></tr><tr><td>channel</td><td>Channel written with variants</td><td class="n">3,338</td><td class="ej">Agent Rep · ussd · Mobile app · Ussd · App</td><td>Unified</td></tr><tr><td>region</td><td>Region written as alias, abbreviation, different case or with spaces</td><td class="n">3,196</td><td class="ej">&quot; Sydney &quot; · Melbourne VIC · Brisbane QLD · PER · MEL</td><td>Unified</td></tr><tr><td>amount</td><td>Amount with symbols, commas, spaces or parentheses</td><td class="n">2,975</td><td class="ej">(2.50) · $25 · &quot; 4.50 &quot; · &quot; 5 &quot; · $5</td><td>Converted to a number</td></tr><tr><td>amount</td><td>Empty amount</td><td class="n">501</td><td class="ej">&quot;&quot;</td><td>Imputed with the bundle&#x27;s list price according to status</td></tr><tr><td>customer_id</td><td>Customer ID with extra spaces</td><td class="n">435</td><td class="ej">&quot; CUST00366 &quot; · &quot; CUST00847 &quot; · &quot; CUST00340 &quot; · &quot; CUST00463 &quot; · &quot; CUST00155 &quot;</td><td>Spaces removed</td></tr><tr><td>customer_id</td><td>Customer ID without CUST prefix</td><td class="n">312</td><td class="ej">00433 · 00616 · 00173 · 00372 · 00099</td><td>CUST prefix added</td></tr><tr><td>region</td><td>Empty region</td><td class="n">139</td><td class="ej">&quot;&quot;</td><td>Marked as &quot;Unknown&quot;</td></tr><tr><td>txn_date</td><td>Empty date</td><td class="n">110</td><td class="ej">&quot;&quot;</td><td>Left without a date; only excluded from monthly series</td></tr><tr><td>txn_date</td><td>Impossible or unrecognised date</td><td class="n">68</td><td class="ej">2024-13-40</td><td>Left without a date; only excluded from monthly series</td></tr><tr><td>row</td><td>Duplicate row</td><td class="n">55</td><td class="ej">TXN002040 · TXN002765 · TXN003567 · TXN002814 · TXN003312</td><td>Row removed</td></tr><tr><td>amount</td><td>Outlier amount (does not match the list price)</td><td class="n">7</td><td class="ej">800 · 1200 · 1500 · 2000</td><td>Replaced with the list price</td></tr></tbody></table></div>
+<h2>Date formats detected</h2>
+<p>Dates with slashes are read as day/month and dates with dashes as month-day, as shown by the values above 12 in each format.</p>
+<div class="t"><table><thead><tr><th>Format</th><th class="n">Rows</th></tr></thead><tbody><tr><td>DD/MM/YYYY</td><td class="n">1,667</td></tr><tr><td>MM-DD-YYYY</td><td class="n">971</td></tr><tr><td>YYYY.MM.DD</td><td class="n">625</td></tr><tr><td>DD Mon YYYY</td><td class="n">542</td></tr><tr><td>Excel serial</td><td class="n">250</td></tr><tr><td>empty</td><td class="n">110</td></tr><tr><td>invalid</td><td class="n">68</td></tr></tbody></table></div>
+<h2>Outlier amounts corrected</h2>
+<p>Each bundle's list price is its most frequent amount among successful transactions. Amounts that do not match are replaced with that price.</p>
+<div class="t"><table><thead><tr><th>Transaction</th><th>Bundle</th><th>Status</th><th class="n">Original amount</th><th class="n">Corrected amount</th></tr></thead><tbody><tr><td>TXN900000</td><td>Recharge $20</td><td>Successful</td><td class="n">800</td><td class="n">20</td></tr><tr><td>TXN004190</td><td>Recharge $20</td><td>Successful</td><td class="n">1200</td><td class="n">20</td></tr><tr><td>TXN004193</td><td>Recharge $20</td><td>Successful</td><td class="n">1500</td><td class="n">20</td></tr><tr><td>TXN004188</td><td>Recharge $20</td><td>Successful</td><td class="n">800</td><td class="n">20</td></tr><tr><td>TXN004191</td><td>Recharge $20</td><td>Successful</td><td class="n">800</td><td class="n">20</td></tr><tr><td>TXN004192</td><td>Recharge $20</td><td>Successful</td><td class="n">1500</td><td class="n">20</td></tr><tr><td>TXN004189</td><td>Recharge $20</td><td>Successful</td><td class="n">2000</td><td class="n">20</td></tr></tbody></table></div>
+<h2>Detail</h2>
+<p>Every correction, row by row (row number in the original file, value before and after), is in <b>findings_detail.csv</b>, in this same folder.</p>
+</div></body></html>

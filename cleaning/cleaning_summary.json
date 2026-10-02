@@ -1,0 +1,76 @@
+{
+  "file": "telecom_transactions_au_dirty.csv",
+  "rows_in": 4288,
+  "duplicates_removed": 55,
+  "rows_out": 4233,
+  "date_formats": {
+    "DD Mon YYYY": 542,
+    "YYYY.MM.DD": 625,
+    "DD/MM/YYYY": 1667,
+    "Excel serial": 250,
+    "MM-DD-YYYY": 971,
+    "empty": 110,
+    "invalid": 68
+  },
+  "dates_missing": 178,
+  "dates_invalid": 68,
+  "customer_id_spaces": 435,
+  "customer_id_no_prefix": 312,
+  "regions_normalized": 3196,
+  "regions_empty": 139,
+  "channels_normalized": 3338,
+  "amounts_reformatted": 2975,
+  "amounts_imputed": 501,
+  "amounts_outliers": 7,
+  "outliers": [
+    {
+      "transaction_id": "TXN900000",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 800.0,
+      "corrected_amount": 20.0
+    },
+    {
+      "transaction_id": "TXN004190",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 1200.0,
+      "corrected_amount": 20.0
+    },
+    {
+      "transaction_id": "TXN004193",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 1500.0,
+      "corrected_amount": 20.0
+    },
+    {
+      "transaction_id": "TXN004188",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 800.0,
+      "corrected_amount": 20.0
+    },
+    {
+      "transaction_id": "TXN004191",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 800.0,
+      "corrected_amount": 20.0
+    },
+    {
+      "transaction_id": "TXN004192",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 1500.0,
+      "corrected_amount": 20.0
+    },
+    {
+      "transaction_id": "TXN004189",
+      "bundle": "Recharge $20",
+      "status": "Successful",
+      "original_amount": 2000.0,
+      "corrected_amount": 20.0
+    }
+  ]
+}

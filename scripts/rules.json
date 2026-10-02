@@ -1,0 +1,26 @@
+{
+  "_note": "Alias (lowercase) -> unified name. Edit this file to add new variants without touching the code.",
+  "regions": {
+    "sydney": "Sydney", "sydney nsw": "Sydney", "harbour city": "Sydney", "syd": "Sydney",
+    "melbourne": "Melbourne", "vic": "Melbourne", "melbourne vic": "Melbourne", "mel": "Melbourne",
+    "brisbane": "Brisbane", "brisbane qld": "Brisbane", "bne": "Brisbane",
+    "adelaide": "Adelaide", "adl": "Adelaide", "adelaide sa": "Adelaide",
+    "canberra": "Canberra", "cbr": "Canberra",
+    "perth": "Perth", "perth-wa": "Perth", "per": "Perth", "pth": "Perth",
+    "hobart": "Hobart", "hba": "Hobart",
+
+    "lagos": "Lagos", "lagos state": "Lagos", "lasgidi": "Lagos", "lag": "Lagos",
+    "abuja": "Abuja", "fct": "Abuja", "abuja fct": "Abuja", "abv": "Abuja",
+    "kano": "Kano", "kano state": "Kano", "kan": "Kano",
+    "ibadan": "Ibadan", "ib": "Ibadan", "ibadan oyo": "Ibadan",
+    "kaduna": "Kaduna", "kad": "Kaduna",
+    "port harcourt": "Port Harcourt", "port-harcourt": "Port Harcourt", "phc": "Port Harcourt", "ph": "Port Harcourt",
+    "enugu": "Enugu", "enu": "Enugu"
+  },
+  "channels": {
+    "ussd": "USSD", "u.s.s.d": "USSD", "ussd code": "USSD",
+    "agent": "Agent", "agent rep": "Agent",
+    "web": "Web", "website": "Web", "online": "Web",
+    "app": "Mobile App", "mobile app": "Mobile App", "mobileapp": "Mobile App"
+  }
+}

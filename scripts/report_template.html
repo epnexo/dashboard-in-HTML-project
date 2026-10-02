@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Telecom Transactions Report</title>
+<style>
+  :root {
+    color-scheme: light;
+    --page: #f4f6f8; --surface: #ffffff; --ink: #0b1220; --ink-2: #4a5568; --muted: #8590a2;
+    --grid: #e4e8ee; --axis: #c5ccd6; --border: rgba(9,18,41,0.10);
+    --series: #0d9488; --series-soft: rgba(13,148,136,0.10); --track: #e6f1f0;
+    --good: #0ca30c; --serious: #ec835a; --critical: #d03b3b;
+    --brand-1: #091229; --brand-2: #162c4c; --brand-ink: #ffffff; --brand-muted: #a9b6cc; --accent: #2bb5a8;
+    --shadow: 0 1px 2px rgba(9,18,41,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --page: #070d1c; --surface: #111a2e; --ink: #ffffff; --ink-2: #b9c3d6; --muted: #7f8ba3;
+      --grid: #1e2a44; --axis: #2c3a59; --border: rgba(255,255,255,0.10);
+      --series: #2bb5a8; --series-soft: rgba(43,181,168,0.14); --track: #17283d; --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --page: #070d1c; --surface: #111a2e; --ink: #ffffff; --ink-2: #b9c3d6; --muted: #7f8ba3;
+    --grid: #1e2a44; --axis: #2c3a59; --border: rgba(255,255,255,0.10);
+    --series: #2bb5a8; --series-soft: rgba(43,181,168,0.14); --track: #17283d; --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--page); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .in { max-width: 1220px; margin: 0 auto; padding: 0 16px; }
+
+  /* brand header: same gradient as the logo background so it blends in */
+  .top { background: linear-gradient(#091229, #162c4c); color: var(--brand-ink); }
+  .top .in { display: flex; align-items: center; gap: 18px; height: 76px; }
+  .top img { height: 76px; width: auto; display: block; flex: 0 0 auto; }
+  .top .brand { font-size: 22px; font-weight: 700; letter-spacing: .02em; }
+  .top .ttl { border-left: 1px solid rgba(255,255,255,.18); padding-left: 18px; min-width: 0; }
+  .top h1 { font-size: 18px; margin: 0; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top p { margin: 2px 0 0; color: var(--brand-muted); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .top .theme { margin-left: auto; background: rgba(255,255,255,.08); color: var(--brand-ink); border: 1px solid rgba(255,255,255,.18); border-radius: 8px; padding: 7px 12px; font: inherit; cursor: pointer; white-space: nowrap; }
+  .top .theme:hover { background: rgba(255,255,255,.16); }
+  nav { background: var(--brand-2); position: sticky; top: 0; z-index: 5; }
+  nav .in { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+  nav button { background: none; border: 0; border-bottom: 3px solid transparent; color: var(--brand-muted); font: inherit; font-weight: 500; padding: 12px 14px 9px; cursor: pointer; white-space: nowrap; }
+  nav button:hover { color: var(--brand-ink); }
+  nav button[aria-selected="true"] { color: var(--brand-ink); border-bottom-color: var(--accent); }
+
+  .wrap { padding-top: 18px; padding-bottom: 48px; }
+  .filters { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 10px; }
+  .filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+  .filters select { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; min-width: 150px; }
+  .filters .reset { background: none; border: 0; color: var(--ink-2); text-decoration: underline; cursor: pointer; font: inherit; padding: 8px 4px; }
+  .count { margin-left: auto; color: var(--muted); font-size: 12px; padding-bottom: 8px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 16px; }
+  .chips .lab { font-size: 12px; color: var(--ink-2); margin-right: 4px; }
+  .chips .sep { width: 1px; height: 22px; background: var(--axis); margin: 0 8px; }
+  .chip { font: inherit; font-size: 12.5px; padding: 5px 11px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+  .chip:hover { color: var(--ink); border-color: var(--axis); }
+  .chip[aria-pressed="true"] { background: var(--brand-2); border-color: var(--brand-2); color: #fff; }
+
+  .page { display: none; } .page.on { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; box-shadow: var(--shadow); min-width: 0; }
+  .card h2 { font-size: 15px; margin: 0 0 2px; font-weight: 600; }
+  .card .desc { color: var(--ink-2); font-size: 12.5px; margin: 0 0 14px; }
+  .note { color: var(--muted); font-size: 12px; margin: 10px 0 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+  .grid2.wide { grid-template-columns: 1.7fr 1fr; }
+  .full { margin-top: 12px; }
+
+  .kpis { display: grid; grid-template-columns: 1.6fr repeat(3, 1fr); gap: 12px; }
+  .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 12px; }
+  .kpi .label { color: var(--ink-2); font-size: 12.5px; }
+  .kpi .value { font-size: 26px; font-weight: 600; letter-spacing: -0.01em; margin-top: 4px; }
+  .kpi .hint { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .kpi.hero { grid-row: span 2; display: flex; align-items: center; gap: 18px; border-top: 3px solid var(--series); }
+  .kpi.hero .value { font-size: 50px; line-height: 1.05; }
+  .kpi.hero .ring { margin-left: auto; text-align: center; flex: 0 0 auto; }
+  .kpi.hero .ring span { display: block; font-size: 12px; color: var(--ink-2); margin-top: 2px; }
+  @media (max-width: 900px) {
+    .kpis { grid-template-columns: 1fr 1fr; } .kpi.hero { grid-column: span 2; grid-row: auto; }
+    .kpi.hero .value { font-size: 40px; } .grid2, .grid2.wide { grid-template-columns: 1fr; } .tiles { grid-template-columns: 1fr 1fr; }
+    .top .ttl p, .top .theme { display: none; }
+  }
+
+  /* horizontal bars */
+  .hbar { display: grid; grid-template-columns: minmax(90px, max-content) 1fr; gap: 9px 12px; align-items: center; }
+  .name { color: var(--ink-2); font-size: 13px; white-space: nowrap; }
+  .hbar .row { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 2px 0; }
+  .hbar .bar { height: 16px; background: var(--series); border-radius: 0 4px 4px 0; min-width: 2px; flex: 0 0 auto; }
+  .val { font-size: 12.5px; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  /* mix list: label, value, % and bar on a track */
+  .share { display: grid; grid-template-columns: minmax(90px, max-content) max-content max-content 1fr; gap: 12px 14px; align-items: center; }
+  .share .val { text-align: right; } .share .pc { color: var(--ink-2); }
+  .share .track { height: 10px; background: var(--track); border-radius: 5px; overflow: hidden; min-width: 40px; }
+  .share .track i { display: block; height: 100%; background: var(--series); border-radius: 5px; min-width: 2px; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--ink-2); margin-bottom: 12px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
+  .stack { display: grid; grid-template-columns: minmax(90px, max-content) 1fr max-content; gap: 9px 12px; align-items: center; }
+  .stack .segs { display: flex; gap: 2px; height: 16px; }
+  .stack .segs span { display: block; height: 100%; min-width: 2px; }
+  .stack .segs span:first-child { border-radius: 4px 0 0 4px; } .stack .segs span:last-child { border-radius: 0 4px 4px 0; }
+  [data-tip]:hover { filter: brightness(1.08); }
+
+  .tree { position: relative; height: 300px; }
+  .tree div { position: absolute; background: var(--series); border-radius: 4px; color: #fff; font-size: 12px; line-height: 1.25; padding: 6px 8px; overflow: hidden; }
+  .tree div b { display: block; font-weight: 600; }
+
+  svg { display: block; width: 100%; overflow: visible; }
+  svg text { fill: var(--muted); font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  svg text.lbl { fill: var(--ink); font-weight: 600; }
+  svg text.big { fill: var(--ink); font-weight: 600; font-size: 17px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--ink-2); font-weight: 500; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--grid); }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); }
+  tr:last-child td { border-bottom: 0; }
+  .num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .mini { height: 8px; background: var(--series); border-radius: 0 4px 4px 0; min-width: 2px; }
+  .scroll { overflow-x: auto; }
+  td.heat { text-align: right; font-variant-numeric: tabular-nums; }
+
+  #tip { position: fixed; pointer-events: none; background: #091229; color: #fff; padding: 7px 10px; border-radius: 8px; font-size: 12.5px; line-height: 1.4; opacity: 0; transition: opacity .08s; z-index: 10; max-width: 260px; }
+  #tip b { font-weight: 600; }
+  footer { color: var(--muted); font-size: 12px; margin-top: 24px; }
+
+  /* findings, deltas, targets */
+  :root { --up: #006300; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --up: #0ca30c; } }
+  :root[data-theme="dark"] { --up: #0ca30c; }
+  .insights { margin-bottom: 12px; border-left: 3px solid var(--series); }
+  .insights ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 9px; }
+  .insights li { display: flex; gap: 10px; align-items: baseline; font-size: 13.5px; }
+  .insights a { color: var(--ink-2); white-space: nowrap; font-size: 12.5px; }
+  .tag { flex: 0 0 72px; text-align: center; font-size: 11px; font-weight: 600; padding: 2px 0; border-radius: 10px; border: 1px solid var(--axis); color: var(--ink-2); }
+  .tag.alert { border-color: var(--critical); color: var(--ink); }
+  .tag.alert::before { content: '⚠ '; color: var(--critical); }
+  .tag.ok::before { content: '✓ '; color: var(--up); }
+  .delta { font-size: 12px; margin-top: 5px; color: var(--muted); }
+  .delta b { font-weight: 600; } .delta .up { color: var(--up); } .delta .down { color: var(--critical); }
+  .spark { float: right; margin-top: 2px; }
+  .goal { margin-top: 10px; max-width: 320px; }
+  .goal .track { height: 8px; background: var(--track); border-radius: 4px; overflow: hidden; }
+  .goal .track i { display: block; height: 100%; background: var(--series); border-radius: 4px; }
+  .goal span { font-size: 12px; color: var(--ink-2); }
+  [data-f] { cursor: pointer; }
+  .btn { font: inherit; font-size: 12.5px; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--ink-2); cursor: pointer; }
+  .btn:hover { color: var(--ink); border-color: var(--axis); }
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  @media print {
+    nav, #filterBar, .theme, #tip, .btn { display: none !important; }
+    body { background: #fff; } .card { break-inside: avoid; box-shadow: none; }
+    .top { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <span id="logo"></span>
+  <div class="ttl"><h1>Telecom Transactions Report</h1><p id="period"></p></div>
+  <button class="theme" id="themeBtn" type="button">Toggle theme</button>
+</div></header>
+<nav><div class="in" id="tabs" role="tablist"></div></nav>
+
+<div class="in wrap">
+  <div id="filterBar">
+    <div class="filters" id="filters"></div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <section class="page" id="p-overview">
+    <div class="card insights"><h2>Key findings</h2><ul id="insights"></ul></div>
+    <div class="kpis" id="kpis"></div>
+    <div class="grid2 wide">
+      <div class="card"><h2>Revenue trend</h2><p class="desc">Monthly revenue (<span class="cur"></span>) and change vs. previous month</p><div id="chMonth"></div><p class="note" id="noDate"></p></div>
+      <div class="card"><h2>Revenue mix</h2><p class="desc">By product type</p><div id="shProd"></div>
+        <h2 style="margin-top:22px">By segment</h2><p class="desc">Prepaid and postpaid</p><div id="shSeg"></div></div>
+    </div>
+    <div class="tiles" id="highlights"></div>
+  </section>
+
+  <section class="page" id="p-sales">
+    <div class="grid2 wide">
+      <div class="card"><h2>Revenue by bundle</h2><p class="desc">Each block's area is its share of revenue</p><div class="tree" id="treeBundle"></div></div>
+      <div class="card"><h2>Revenue by product type</h2><p class="desc">Successful transactions (<span class="cur"></span>)</p><div id="chProd"></div>
+        <h2 style="margin-top:22px">Average ticket by product</h2><p class="desc">Revenue / successful transactions (<span class="cur"></span>)</p><div id="chTicket"></div></div>
+    </div>
+    <div class="card full"><h2>Successful transactions by month</h2><p class="desc">Number of transactions and change vs. previous month</p><div id="chTxMonth"></div></div>
+    <div class="card full"><h2>Revenue by day of week</h2><p class="desc">Dated successful transactions (<span class="cur"></span>)</p><div id="chDow"></div></div>
+    <div class="card full"><h2>Bundle performance</h2><p class="desc">Sorted by revenue</p><div class="scroll" id="tblBundle"></div></div>
+  </section>
+
+  <section class="page" id="p-channels">
+    <div class="grid2">
+      <div class="card"><h2>Revenue by region</h2><p class="desc">Successful transactions (<span class="cur"></span>)</p><div id="chReg"></div></div>
+      <div class="card"><h2>Revenue by channel</h2><p class="desc">Successful transactions (<span class="cur"></span>)</p><div id="chChan"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>Transaction outcome by channel</h2><p class="desc">Share by status; success rate on the right</p><div class="legend st"></div><div id="stChan"></div></div>
+      <div class="card"><h2>Transaction outcome by region</h2><p class="desc">Share by status; success rate on the right</p><div class="legend st"></div><div id="stReg"></div></div>
+    </div>
+    <div class="card full"><h2>Revenue by region and channel</h2><p class="desc">The darker the cell, the higher the revenue (<span class="cur"></span>)</p><div class="scroll" id="tblHeat"></div></div>
+  </section>
+
+  <section class="page" id="p-operations">
+    <div class="tiles" id="opTiles" style="margin-top:0"></div>
+    <div class="grid2">
+      <div class="card"><h2>Failure rate by region</h2><p class="desc" id="opDesc"></p><div id="rtReg"></div></div>
+      <div class="card"><h2>Failure rate by channel</h2><p class="desc">Failed transactions / transactions</p><div id="rtChan"></div>
+        <h2 style="margin-top:22px">Failure rate by product</h2><p class="desc">Failed transactions / transactions</p><div id="rtProd"></div></div>
+    </div>
+    <div class="card full"><h2>Failure rate by month</h2><p class="desc">Share of failed transactions</p><div id="chFailMonth"></div></div>
+    <div class="card full"><h2>Where revenue is lost</h2><p class="desc">Unbilled revenue = failed transactions valued at their bundle price</p><div class="scroll" id="tblLost"></div></div>
+  </section>
+
+  <section class="page" id="p-customers">
+    <div class="tiles" id="custTiles" style="margin-top:0"></div>
+    <div class="grid2">
+      <div class="card"><h2>Customers by number of purchases</h2><p class="desc">How many customers made 1, 2, 3… successful purchases</p><div id="chFreq"></div></div>
+      <div class="card"><h2>Customers by segment</h2><p class="desc">Distinct customers with at least one successful purchase</p><div id="shCustSeg"></div>
+        <h2 style="margin-top:22px">Customers by region</h2><p class="desc">Distinct customers with at least one successful purchase</p><div id="chCustReg"></div></div>
+    </div>
+    <div class="grid2">
+      <div class="card"><h2>New customers by month</h2><p class="desc">Month of each customer's first successful purchase</p><div id="chNew"></div></div>
+      <div class="card"><div class="head"><div><h2>Inactive customers</h2><p class="desc" id="inaDesc"></p></div><button class="btn" type="button" id="expIna">Export list</button></div><div class="scroll" id="tblIna"></div></div>
+    </div>
+    <div class="card full"><h2>Top 10 customers</h2><p class="desc">By revenue generated</p><div class="scroll" id="tblCust"></div></div>
+  </section>
+
+  <section class="page" id="p-quality">
+    <div class="tiles" id="cleanTiles" style="margin-top:0"></div>
+    <div class="grid2">
+      <div class="card"><h2>Cleaning applied</h2><p class="desc">Corrections made to the original file before analysis</p><div class="scroll" id="tblClean"></div></div>
+      <div class="card"><h2>Outlier amounts corrected</h2><p class="desc">They did not match the bundle's list price and were replaced with it</p><div class="scroll" id="tblOut"></div></div>
+    </div>
+  </section>
+  <footer id="foot"></footer>
+</div>
+<div id="tip"></div>
+
+<script>
+const LOGO = "__LOGO__";
+const DATA = /*__DATA__*/null;
+if (!DATA) {  // template opened directly: no data embedded yet
+  document.querySelector('.wrap').innerHTML = '<div class="card" style="max-width:640px;margin:40px auto"><h2>This is the report template, without data</h2><p class="desc" style="margin:8px 0 0">It is not meant to be opened directly. Run <b>run.bat</b> and open the generated report at <b>reports/telecom_report.html</b>, or use this link: <a href="../reports/telecom_report.html">open the report</a>.</p></div>';
+  document.querySelector('nav').style.display = 'none';
+  throw new Error('Template without data: open reports/telecom_report.html');
+}
+const { dims, rows, log } = DATA;
+// row: [date, customer, region, segment, product, bundle, channel, mb, amount, status]
+const D = { date: 0, cust: 1, region: 2, seg: 3, prod: 4, bundle: 5, chan: 6, mb: 7, amt: 8, status: 9 };
+const OK = dims.status.indexOf('Successful'), FAIL = dims.status.indexOf('Failed'), REV = dims.status.indexOf('Reversed');
+const MES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const PAGES = [['overview', 'Overview'], ['sales', 'Sales'], ['channels', 'Channels & regions'], ['operations', 'Operations'], ['customers', 'Customers'], ['quality', 'Data quality']];
+
+const nf = new Intl.NumberFormat('en-US');
+const nf2 = new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const num = v => nf.format(Math.round(v));
+const money = v => CUR + (Math.abs(v) < 1000 && !Number.isInteger(v) ? nf2.format(v) : num(v));
+const compact = v => { const a = Math.abs(v); return a >= 1e6 ? (v / 1e6).toFixed(2) + 'M' : a >= 1e4 ? (v / 1e3).toFixed(1) + 'K' : num(v); };
+const moneyC = v => Math.abs(v) >= 1e4 ? CUR + compact(v) : money(v);
+const pct = v => (v * 100).toFixed(1) + '%';
+const signed = v => (v >= 0 ? '+' : '') + pct(v);
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sum = (a, f) => a.reduce((s, x) => s + f(x), 0);
+// currency, targets and thresholds: from scripts/settings.json
+const METAS = Object.assign({ currency_symbol: '$', currency_name: '', annual_revenue_target: null, success_rate_target_pct: null, failure_threshold_pct: 15, inactivity_days: 90 }, DATA.settings || {});
+const CUR = METAS.currency_symbol;
+// list price per bundle, used to value what failed transactions left unbilled
+const PRICE = {};
+for (const r of rows) if (r[D.status] === OK && !(r[D.bundle] in PRICE)) PRICE[r[D.bundle]] = r[D.amt];
+const lostOf = data => sum(data, r => r[D.status] === FAIL ? (PRICE[r[D.bundle]] || 0) : 0);
+function download(name, lines) {
+  const cell = v => { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + lines.map(l => l.map(cell).join(',')).join('\r\n')], { type: 'text/csv' }));
+  a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+$('logo').innerHTML = LOGO.startsWith('data:') ? `<img src="${LOGO}" alt="EPNexo">` : '<span class="brand">EPNexo</span>';
+
+// ---------- tooltip ----------
+const tip = $('tip');
+function showTip(e, html) {
+  tip.innerHTML = html; tip.style.opacity = 1;
+  const r = tip.getBoundingClientRect();
+  tip.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - r.width - 8)) + 'px';
+  tip.style.top = Math.max(8, e.clientY - r.height - 12) + 'px';
+}
+const hideTip = () => { tip.style.opacity = 0; };
+function bindTips(root) {
+  root.querySelectorAll('[data-tip]').forEach(n => {
+    n.addEventListener('mousemove', e => showTip(e, n.dataset.tip));
+    n.addEventListener('mouseleave', hideTip);
+  });
+}
+
+// ---------- navigation and filters ----------
+const FILTERS = [['region', 'Region', D.region], ['seg', 'Segment', D.seg], ['prod', 'Product', D.prod], ['chan', 'Channel', D.chan]];
+const state = { months: new Set(), page: 'overview' };
+
+$('tabs').innerHTML = PAGES.map(([k, t]) => `<button type="button" role="tab" data-page="${k}">${t}</button>`).join('');
+$('tabs').addEventListener('click', e => { const b = e.target.closest('button'); if (b) location.hash = b.dataset.page; });
+function go() {
+  const h = location.hash.slice(1);
+  state.page = PAGES.some(p => p[0] === h) ? h : 'overview';
+  document.querySelectorAll('.page').forEach(p => p.classList.toggle('on', p.id === 'p-' + state.page));
+  $('tabs').querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', b.dataset.page === state.page));
+  $('filterBar').style.display = state.page === 'quality' ? 'none' : '';
+  render();
+}
+addEventListener('hashchange', () => { go(); scrollTo(0, 0); });
+
+$('filters').innerHTML = FILTERS.map(([k, label]) =>
+  `<label>${label}<select data-k="${k}"><option value="">All</option>${dims[k].map((n, i) => `<option value="${i}">${esc(n)}</option>`).join('')}</select></label>`
+).join('') + '<button class="reset" type="button" id="reset">Clear filters</button><button class="btn" type="button" id="expCsv">Export CSV</button><button class="btn" type="button" id="print">Print / PDF</button><span class="count" id="count"></span>';
+$('filters').addEventListener('change', e => { if (e.target.dataset.k) { state[e.target.dataset.k] = e.target.value; render(); } });
+$('print').addEventListener('click', () => print());
+// clicking a bar with data-f="filter:index" applies (or clears) that filter
+document.addEventListener('click', e => {
+  const n = e.target.closest('[data-f]'); if (!n) return;
+  const [k, v] = n.dataset.f.split(':');
+  state[k] = state[k] === v ? '' : v;
+  $('filters').querySelector(`[data-k="${k}"]`).value = state[k];
+  hideTip(); render();
+});
+
+const QUARTERS = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]];
+$('chips').innerHTML = '<span class="lab">Months</span>' + MES.map((m, i) => `<button class="chip" type="button" data-m="${i}">${m}</button>`).join('') +
+  '<span class="sep"></span><span class="lab">Quarter</span>' + QUARTERS.map((q, i) => `<button class="chip" type="button" data-q="${i}">Q${i + 1}</button>`).join('');
+function syncChips() {
+  $('chips').querySelectorAll('[data-m]').forEach(b => b.setAttribute('aria-pressed', state.months.has(+b.dataset.m)));
+  $('chips').querySelectorAll('[data-q]').forEach(b => {
+    const q = QUARTERS[+b.dataset.q];
+    b.setAttribute('aria-pressed', state.months.size === 3 && q.every(m => state.months.has(m)));
+  });
+}
+$('chips').addEventListener('click', e => {
+  const b = e.target.closest('.chip'); if (!b) return;
+  if (b.dataset.m !== undefined) { const m = +b.dataset.m; state.months.has(m) ? state.months.delete(m) : state.months.add(m); }
+  else { const on = b.getAttribute('aria-pressed') === 'true'; state.months = new Set(on ? [] : QUARTERS[+b.dataset.q]); }
+  render();
+});
+$('reset').addEventListener('click', () => {
+  $('filters').querySelectorAll('select').forEach(s => { s.value = ''; state[s.dataset.k] = ''; });
+  state.months.clear(); render();
+});
+
+// ---------- components ----------
+const fAttr = (fkey, i) => fkey && i.i !== undefined ? `data-f="${fkey}:${i.i}" ` : '';
+function hbar(el, items, fmt, fmtFull, totalLabel = 'of total', fkey = '') {
+  const max = Math.max(1, ...items.map(i => i.value)), total = sum(items, i => i.value) || 1;
+  el.innerHTML = '<div class="hbar">' + items.map(i =>
+    `<div class="name">${esc(i.label)}</div><div class="row" ${fAttr(fkey, i)}data-tip="<b>${esc(i.label)}</b><br>${fmtFull(i.value)}${totalLabel ? ' · ' + pct(i.value / total) + ' ' + totalLabel : ''}"><div class="bar" style="width:calc(${(i.value / max * 100).toFixed(2)}% - 70px)"></div><span class="val">${fmt(i.value)}</span></div>`
+  ).join('') + '</div>';
+  bindTips(el);
+}
+// rates (0–1) per category; those above the failure threshold are shown in red with ⚠
+function rateBars(el, items, fkey = '') {
+  const um = METAS.failure_threshold_pct / 100, max = Math.max(um, ...items.map(i => i.rate)) || 1;
+  el.innerHTML = '<div class="hbar">' + items.map(i =>
+    `<div class="name">${esc(i.label)}</div><div class="row" ${fAttr(fkey, i)}data-tip="<b>${esc(i.label)}</b><br>${num(i.k)} failed out of ${num(i.n)} transactions${i.rate > um ? '<br>Above the ' + METAS.failure_threshold_pct + '% threshold' : ''}"><div class="bar" style="width:calc(${(i.rate / max * 100).toFixed(2)}% - 90px);background:${i.rate > um ? 'var(--critical)' : 'var(--series)'}"></div><span class="val">${pct(i.rate)}${i.rate > um ? ' ⚠' : ''}</span></div>`
+  ).join('') + '</div>';
+  bindTips(el);
+}
+function share(el, items, fmt, fkey = '') {
+  const total = sum(items, i => i.value) || 1;
+  el.innerHTML = '<div class="share">' + items.map(i =>
+    `<div class="name">${esc(i.label)}</div><div class="val">${fmt(i.value)}</div><div class="val pc">${pct(i.value / total)}</div><div class="track" ${fAttr(fkey, i)}data-tip="<b>${esc(i.label)}</b><br>${fmt(i.value)} · ${pct(i.value / total)} of total"><i style="width:${(i.value / total * 100).toFixed(1)}%"></i></div>`
+  ).join('') + '</div>';
+  bindTips(el);
+}
+function stacked(el, items) {
+  const cols = ['var(--good)', 'var(--critical)', 'var(--serious)'], names = ['Successful', 'Failed', 'Reversed'];
+  el.innerHTML = '<div class="stack">' + items.map(i => {
+    const t = sum(i.parts, p => p) || 1;
+    const tipHtml = `<b>${esc(i.label)}</b><br>` + i.parts.map((p, k) => `${names[k]}: ${num(p)} (${pct(p / t)})`).join('<br>');
+    return `<div class="name">${esc(i.label)}</div><div class="segs" data-tip="${tipHtml}">` +
+      i.parts.map((p, k) => p ? `<span style="flex:${p} 1 0;background:${cols[k]}"></span>` : '').join('') +
+      `</div><div class="val">${pct(i.parts[0] / t)}</div>`;
+  }).join('') + '</div>';
+  bindTips(el);
+}
+function donut(value) {
+  const r = 34, c = 2 * Math.PI * r;
+  return `<svg viewBox="0 0 92 92" style="width:92px;height:92px" role="img" aria-label="Success rate ${pct(value)}">
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="var(--track)" stroke-width="9"/>
+    <circle cx="46" cy="46" r="${r}" fill="none" stroke="var(--series)" stroke-width="9" stroke-linecap="round" stroke-dasharray="${(c * value).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 46 46)"/>
+    <text class="big" x="46" y="52" text-anchor="middle">${(value * 100).toFixed(0)}%</text></svg>`;
+}
+function niceStep(max) {
+  const raw = max / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+// 12-month series. pts: [{label, value, n, sel}]. Unselected months are dimmed.
+function monthChart(el, pts, { type, fmtVal, fmtFull, unit, fmtAxis = compact, noDelta = false }) {
+  const W = el.clientWidth || 800, H = 270, m = { l: 58, r: 22, t: 30, b: 28 };
+  const max = Math.max(1, ...pts.map(p => p.value)), step = niceStep(max), top = Math.ceil(max / step) * step;
+  const iw = W - m.l - m.r, ih = H - m.t - m.b, band = iw / pts.length;
+  const x = i => m.l + band * (i + 0.5), y = v => m.t + ih - v / top * ih;
+  const delta = i => !noDelta && i && pts[i - 1].value ? (pts[i].value - pts[i - 1].value) / pts[i - 1].value : null;
+  let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img">`;
+  for (let v = 0; v <= top + 1e-9; v += step)
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v ? 'var(--grid)' : 'var(--axis)'}"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${fmtAxis(v)}</text>`;
+  pts.forEach((p, i) => { s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle" ${p.hl ? 'class="lbl"' : ''}>${p.label}</text>`; });
+  if (type === 'line') {
+    const path = pts.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('');
+    s += `<path d="${path}L${x(pts.length - 1)},${y(0)}L${x(0)},${y(0)}Z" fill="var(--series-soft)"/>`;
+    s += `<path d="${path}" fill="none" stroke="var(--series)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    s += `<line id="xh" y1="${m.t}" y2="${m.t + ih}" stroke="var(--axis)" visibility="hidden"/>`;
+    pts.forEach((p, i) => { s += `<circle cx="${x(i)}" cy="${y(p.value)}" r="4.5" fill="var(--series)" stroke="var(--surface)" stroke-width="2" opacity="${p.sel ? 1 : 0.3}"/>`; });
+  } else {
+    const bw = Math.min(24, band * 0.6);
+    pts.forEach((p, i) => { const h = Math.max(0, y(0) - y(p.value)); s += `<path d="M${x(i) - bw / 2},${y(0)}v${-Math.max(0, h - 4)}q0,-4 4,-4h${bw - 8}q4,0 4,4v${Math.max(0, h - 4)}z" fill="var(--series)" opacity="${p.sel ? 1 : 0.3}"/>`; });
+  }
+  if (band >= 44) pts.forEach((p, i) => {
+    if (!p.value) return;
+    const d = delta(i);
+    s += `<text class="lbl" x="${x(i)}" y="${y(p.value) - (d === null ? 10 : 21)}" text-anchor="middle">${fmtVal(p.value)}</text>`;
+    if (d !== null) s += `<text x="${x(i)}" y="${y(p.value) - 9}" text-anchor="middle">${signed(d)}</text>`;
+  });
+  s += `<rect x="${m.l}" y="${m.t}" width="${iw}" height="${ih}" fill="transparent"/></svg>`;
+  el.innerHTML = s;
+  const svg = el.firstChild, xh = svg.querySelector('#xh');
+  svg.addEventListener('mousemove', e => {
+    const r = svg.getBoundingClientRect(), px = (e.clientX - r.left) * W / r.width;
+    const i = Math.max(0, Math.min(pts.length - 1, Math.floor((px - m.l) / band)));
+    if (xh) { xh.setAttribute('x1', x(i)); xh.setAttribute('x2', x(i)); xh.setAttribute('visibility', 'visible'); }
+    const d = delta(i);
+    showTip(e, `<b>${pts[i].label}</b><br>${fmtFull(pts[i].value)} ${unit}${d === null ? '' : `<br>${signed(d)} vs. previous month`}`);
+  });
+  svg.addEventListener('mouseleave', () => { hideTip(); if (xh) xh.setAttribute('visibility', 'hidden'); });
+}
+function colChart(el, items, { fmt = num, fmtFull = num, fmtAxis = num, unit = 'customers' } = {}) {  // columns for a few categories
+  const W = el.clientWidth || 500, H = 230, m = { l: 44, r: 10, t: 24, b: 28 };
+  const max = Math.max(1, ...items.map(p => p.value)), step = niceStep(max), top = Math.ceil(max / step) * step;
+  const iw = W - m.l - m.r, ih = H - m.t - m.b, band = iw / items.length, bw = Math.min(24, band * 0.6);
+  const x = i => m.l + band * (i + 0.5), y = v => m.t + ih - v / top * ih, total = sum(items, i => i.value) || 1;
+  let s = `<svg viewBox="0 0 ${W} ${H}" height="${H}" role="img">`;
+  for (let v = 0; v <= top + 1e-9; v += step)
+    s += `<line x1="${m.l}" x2="${W - m.r}" y1="${y(v)}" y2="${y(v)}" stroke="${v ? 'var(--grid)' : 'var(--axis)'}"/><text x="${m.l - 8}" y="${y(v) + 4}" text-anchor="end">${fmtAxis(v)}</text>`;
+  items.forEach((p, i) => {
+    const h = Math.max(0, y(0) - y(p.value));
+    s += `<text x="${x(i)}" y="${H - 8}" text-anchor="middle">${esc(p.label)}</text>`;
+    if (p.value) s += `<path d="M${x(i) - bw / 2},${y(0)}v${-Math.max(0, h - 4)}q0,-4 4,-4h${bw - 8}q4,0 4,4v${Math.max(0, h - 4)}z" fill="var(--series)"/><text class="lbl" x="${x(i)}" y="${y(p.value) - 7}" text-anchor="middle">${fmt(p.value)}</text>`;
+    s += `<rect x="${x(i) - band / 2}" y="${m.t}" width="${band}" height="${ih}" fill="transparent" data-tip="<b>${esc(p.tip || p.label)}</b><br>${fmtFull(p.value)} ${unit} · ${pct(p.value / total)}"/>`;
+  });
+  el.innerHTML = s + '</svg>';
+  bindTips(el);
+}
+function treemap(el, items, total) {
+  const W = el.clientWidth || 600, H = 300, out = [];
+  (function split(list, x, y, w, h) {
+    if (list.length === 1) { out.push({ ...list[0], x, y, w, h }); return; }
+    const tot = sum(list, i => i.value); let acc = 0, i = 0;
+    do { acc += list[i].value; i++; } while (i < list.length - 1 && acc + list[i].value / 2 < tot / 2);
+    const f = acc / tot;
+    if (w >= h) { split(list.slice(0, i), x, y, w * f, h); split(list.slice(i), x + w * f, y, w * (1 - f), h); }
+    else { split(list.slice(0, i), x, y, w, h * f); split(list.slice(i), x, y + h * f, w, h * (1 - f)); }
+  })(items.filter(i => i.value > 0), 0, 0, W, H);
+  el.innerHTML = out.map(c => {
+    const fits = c.w > 84 && c.h > 40;
+    return `<div data-tip="<b>${esc(c.label)}</b><br>${money(c.value)} · ${pct(c.value / total)} of revenue<br>${num(c.n)} transactions" style="left:${c.x + 1}px;top:${c.y + 1}px;width:${Math.max(0, c.w - 2)}px;height:${Math.max(0, c.h - 2)}px">${fits ? `<b>${esc(c.label)}</b>${moneyC(c.value)} · ${pct(c.value / total)}` : ''}</div>`;
+  }).join('');
+  bindTips(el);
+}
+const tile = (label, value, hint, extra = '', sp = '') => `<div class="card kpi">${sp}<div class="label">${label}</div><div class="value">${value}</div><div class="hint">${hint}</div>${extra}</div>`;
+function spark(vals) {
+  const max = Math.max(...vals), min = Math.min(...vals), W = 76, H = 22, sp = max - min || 1;
+  const px = i => 2 + i * (W - 4) / (vals.length - 1), py = v => H - 3 - (v - min) / sp * (H - 6), n = vals.length - 1;
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" style="width:${W}px;height:${H}px" aria-hidden="true"><polyline points="${vals.map((v, i) => px(i).toFixed(1) + ',' + py(v).toFixed(1)).join(' ')}" fill="none" stroke="var(--axis)" stroke-width="1.5" stroke-linejoin="round"/><circle cx="${px(n).toFixed(1)}" cy="${py(vals[n]).toFixed(1)}" r="2.5" fill="var(--series)"/></svg>`;
+}
+
+// ---------- calculations ----------
+function group(data, col, names) {
+  const acc = names.map((label, i) => ({ label, value: 0, n: 0, i }));
+  for (const r of data) if (r[D.status] === OK) { acc[r[col]].value += r[D.amt]; acc[r[col]].n++; }
+  return acc;
+}
+const desc = a => a.filter(i => i.value > 0 || i.n > 0).sort((a, b) => b.value - a.value);
+function statusBy(data, col, names) {
+  const st = names.map(label => ({ label, parts: [0, 0, 0] }));
+  for (const r of data) st[r[col]].parts[r[D.status] === OK ? 0 : r[D.status] === FAIL ? 1 : 2]++;
+  const rate = i => i.parts[0] / (sum(i.parts, p => p) || 1);
+  return st.filter(i => i.parts.some(Boolean)).sort((a, b) => rate(b) - rate(a));
+}
+function distinctBy(ok, col, names) {
+  const sets = names.map(() => new Set());
+  for (const r of ok) sets[r[col]].add(r[D.cust]);
+  return names.map((label, i) => ({ label, i, value: sets[i].size })).filter(i => i.value).sort((a, b) => b.value - a.value);
+}
+function failBy(data, col, names) {
+  const acc = names.map((label, i) => ({ label, i, n: 0, k: 0, rev: 0, lost: 0 }));
+  for (const r of data) { const a = acc[r[col]]; a.n++; if (r[D.status] === FAIL) { a.k++; a.lost += PRICE[r[D.bundle]] || 0; } else if (r[D.status] === REV) a.rev++; }
+  return acc.filter(a => a.n).map(a => ({ ...a, rate: a.k / a.n })).sort((a, b) => b.rate - a.rate);
+}
+// monthly aggregates (dated rows only) and period comparison
+function monthly(base) {
+  const M = MES.map(() => ({ rev: 0, n: 0, ok: 0, fail: 0, lost: 0, custs: new Set() }));
+  for (const r of base) {
+    if (!r[D.date]) continue;
+    const m = M[+r[D.date].slice(5, 7) - 1]; m.n++; m.custs.add(r[D.cust]);
+    if (r[D.status] === OK) { m.ok++; m.rev += r[D.amt]; } else if (r[D.status] === FAIL) { m.fail++; m.lost += PRICE[r[D.bundle]] || 0; }
+  }
+  return M;
+}
+function metrics(M, idx) {
+  const a = { rev: 0, n: 0, ok: 0, fail: 0, lost: 0 }, custs = new Set();
+  for (const i of idx) { for (const k in a) a[k] += M[i][k]; M[i].custs.forEach(c => custs.add(c)); }
+  return { ...a, custs: custs.size, rate: a.n ? a.ok / a.n : 0, failRate: a.n ? a.fail / a.n : 0, ticket: a.ok ? a.rev / a.ok : 0 };
+}
+// With no months selected, compares the last month with data against the one before; with contiguous months, against the preceding block of equal length.
+function periods(M) {
+  const sel = [...state.months].sort((a, b) => a - b), low = i => MES[i];
+  if (!sel.length) {
+    const w = M.map((m, i) => m.n ? i : -1).filter(i => i >= 0); if (w.length < 2) return null;
+    const c = w[w.length - 1], p = w[w.length - 2];
+    return { cur: metrics(M, [c]), prev: metrics(M, [p]), label: `${low(c)} vs. ${low(p)}`, curName: low(c), prevName: low(p) };
+  }
+  const k = sel.length;
+  if (sel[k - 1] - sel[0] !== k - 1 || sel[0] - k < 0) return null;
+  const prev = sel.map(i => i - k), pn = k === 1 ? low(prev[0]) : `${low(prev[0])}–${low(prev[k - 1])}`;
+  return { cur: metrics(M, sel), prev: metrics(M, prev), label: `vs. ${pn}`, curName: 'the selected months', prevName: pn };
+}
+function delta(per, key, { pp = false, upGood = true } = {}) {
+  if (!per) return '';
+  const c = per.cur[key], p = per.prev[key]; if (!p && !pp) return '';
+  const d = pp ? (c - p) * 100 : (c - p) / p, up = d >= 0;
+  const txt = pp ? (up ? '+' : '') + d.toFixed(1) + ' pp' : signed(d);
+  return `<div class="delta"><b class="${up === upGood ? 'up' : 'down'}">${up ? '▲' : '▼'} ${txt}</b> ${per.label}</div>`;
+}
+// per customer: first and last dated successful purchase, and days since, relative to the file's last date
+function custStats(base) {
+  const by = new Map();
+  for (const r of base) if (r[D.status] === OK && r[D.date]) {
+    let c = by.get(r[D.cust]);
+    if (!c) by.set(r[D.cust], c = { id: r[D.cust], first: r[D.date], last: r[D.date], rev: 0, n: 0, region: r[D.region], seg: r[D.seg] });
+    if (r[D.date] < c.first) c.first = r[D.date];
+    if (r[D.date] > c.last) c.last = r[D.date];
+    c.rev += r[D.amt]; c.n++;
+  }
+  const ref = Date.parse(dates[dates.length - 1]), list = [...by.values()];
+  for (const c of list) c.days = Math.round((ref - Date.parse(c.last)) / 864e5);
+  return list;
+}
+
+function render() {
+  syncChips();
+  if (state.page === 'quality') return;
+  const base = rows.filter(r => FILTERS.every(([k, , col]) => !state[k] || r[col] === +state[k]));
+  const anyM = state.months.size > 0;
+  const data = anyM ? base.filter(r => r[D.date] && state.months.has(+r[D.date].slice(5, 7) - 1)) : base;
+  const ok = data.filter(r => r[D.status] === OK);
+  const revenue = sum(ok, r => r[D.amt]);
+  $('count').textContent = `${num(data.length)} of ${num(rows.length)} transactions`;
+
+  // the monthly series ignores the month filter: it shows all 12 and highlights the selected ones
+  const months = MES.map((label, i) => ({ label, value: 0, n: 0, sel: !anyM || state.months.has(i), hl: anyM && state.months.has(i) }));
+  let noDate = 0;
+  for (const r of base) if (r[D.status] === OK) { if (!r[D.date]) { noDate++; continue; } const mth = months[+r[D.date].slice(5, 7) - 1]; mth.value += r[D.amt]; mth.n++; }
+  const M = monthly(base);
+  last = { base, data, ok, revenue, months, noDate, anyM, M, per: periods(M) };
+  ({ overview: pResumen, sales: pVentas, channels: pCanales, operations: pOperacion, customers: pClientes })[state.page](last);
+}
+let last = null;
+$('expCsv').addEventListener('click', () => {
+  if (!last) return;
+  download('filtered_transactions.csv', [['date', 'customer', 'region', 'segment', 'product', 'bundle', 'channel', 'data_mb', 'amount', 'status'],
+    ...last.data.map(r => [r[D.date], dims.cust[r[D.cust]], dims.region[r[D.region]], dims.seg[r[D.seg]], dims.prod[r[D.prod]], dims.bundle[r[D.bundle]], dims.chan[r[D.chan]], r[D.mb] || '', r[D.amt], dims.status[r[D.status]]])]);
+});
+
+function insights({ base, data, ok, revenue, per }) {
+  const out = [], um = METAS.failure_threshold_pct / 100, nFail = data.filter(r => r[D.status] === FAIL).length;
+  if (!state.region) {
+    const w = failBy(data, D.region, dims.region).filter(g => g.n >= 30 && g.label !== 'Unknown')[0];
+    if (w && w.rate > um) out.push(['alert', `<b>${esc(w.label)}</b> fails on ${pct(w.rate)} of its transactions, versus ${pct((nFail - w.k) / (data.length - w.n || 1))} elsewhere, and accounts for ${pct(w.k / (nFail || 1))} of all failures.`, 'operations']);
+    else if (w) out.push(['ok', `No region is above the ${METAS.failure_threshold_pct}% failure threshold; the highest is ${esc(w.label)} at ${pct(w.rate)}.`, 'operations']);
+  }
+  const lost = lostOf(data);
+  if (lost) out.push(['dato', `Failed transactions left <b>${moneyC(lost)}</b> unbilled, equal to ${pct(lost / (revenue || 1))} of revenue.`, 'operations']);
+  if (per && per.prev.rev) { const d = (per.cur.rev - per.prev.rev) / per.prev.rev; out.push(['dato', `Revenue in ${per.curName} ${d >= 0 ? 'rose' : 'fell'} <b>${pct(Math.abs(d))}</b> versus ${per.prevName}.`, 'sales']); }
+  const cs = custStats(base), ina = cs.filter(c => c.days > METAS.inactivity_days).length;
+  if (cs.length) out.push(['dato', `<b>${num(ina)} customers</b> (${pct(ina / cs.length)}) have not purchased in more than ${METAS.inactivity_days} days.`, 'customers']);
+  const b = desc(group(data, D.bundle, dims.bundle))[0];
+  if (b && revenue) out.push(['dato', `<b>${esc(b.label)}</b> brings in ${pct(b.value / revenue)} of revenue with ${pct(b.n / ok.length)} of successful transactions.`, 'sales']);
+  const names = { alert: 'Alert', ok: 'On track', dato: 'Fact' };
+  $('insights').innerHTML = out.map(([t, txt, page]) => `<li><span class="tag ${t}">${names[t]}</span><span>${txt} <a href="#${page}">View details</a></span></li>`).join('') || '<li>No data for the selected filters.</li>';
+}
+
+function pResumen(C) {
+  const { data, ok, revenue, months, noDate, anyM, M, per } = C;
+  insights(C);
+  const lost = lostOf(data), sp = f => spark(M.map(f));
+  let goal = '';
+  if (METAS.annual_revenue_target) {
+    const target = METAS.annual_revenue_target * (anyM ? state.months.size / 12 : 1);
+    goal = `<div class="goal"><div class="track"><i style="width:${Math.min(100, revenue / target * 100).toFixed(1)}%"></i></div><span>${pct(revenue / target)} of the ${moneyC(target)} target</span></div>`;
+  }
+  const rateGoal = METAS.success_rate_target_pct ? `Target: ${METAS.success_rate_target_pct}%` : 'Success rate';
+  const reversed = sum(data, r => r[D.status] === REV ? -r[D.amt] : 0);
+  const nRev = data.filter(r => r[D.status] === REV).length, nFail = data.filter(r => r[D.status] === FAIL).length;
+  const custs = new Set(data.map(r => r[D.cust])), payers = new Set(ok.map(r => r[D.cust]));
+  const rate = data.length ? ok.length / data.length : 0;
+  $('kpis').innerHTML =
+    `<div class="card kpi hero"><div><div class="label">Revenue</div><div class="value">${moneyC(revenue)}</div><div class="hint">${money(revenue)} from ${num(ok.length)} successful transactions</div>${delta(per, 'rev')}${goal}</div><div class="ring">${donut(rate)}<span>${rateGoal}</span>${delta(per, 'rate', { pp: true })}</div></div>` +
+    tile('Transactions', num(data.length), `${num(nFail)} failed · ${num(nRev)} reversed`, delta(per, 'n'), sp(m => m.n)) +
+    tile('Active customers', num(custs.size), `${num(payers.size)} with at least one successful purchase`, delta(per, 'custs'), sp(m => m.custs.size)) +
+    tile('Average ticket', ok.length ? money(revenue / ok.length) : '–', 'Per successful transaction', delta(per, 'ticket'), sp(m => m.ok ? m.rev / m.ok : 0)) +
+    tile('Revenue lost to failures', moneyC(lost), revenue ? `${pct(lost / revenue)} of revenue · <a href="#operations" style="color:inherit">see where</a>` : '', delta(per, 'lost', { upGood: false }), sp(m => m.lost)) +
+    tile('Revenue per customer', payers.size ? money(revenue / payers.size) : '–', 'ARPU for the period') +
+    tile('Reversed amount', moneyC(reversed), revenue ? `${pct(reversed / revenue)} of revenue` : '');
+
+  monthChart($('chMonth'), months, { type: 'line', fmtVal: compact, fmtFull: money, unit: '' });
+  $('noDate').textContent = (noDate ? `${num(noDate)} successful transactions have no date in the original file: they are not in this series${anyM ? ' or in any month filter' : ', but they do count in the other indicators'}.` : '') +
+    (anyM ? ' The series shows all 12 months and highlights the selected ones.' : '');
+  share($('shProd'), desc(group(data, D.prod, dims.prod)), moneyC, 'prod');
+  share($('shSeg'), desc(group(data, D.seg, dims.seg)), moneyC, 'seg');
+
+  const best = a => desc(a)[0];
+  const hl = (label, item, of) => item && item.value ? tile(label, esc(item.label), `${moneyC(item.value)} · ${pct(item.value / (of || 1))} of revenue`) : tile(label, '–', '');
+  const dated = sum(months.filter(mm => mm.sel), mm => mm.value);
+  $('highlights').innerHTML =
+    hl('Top revenue month', [...months].filter(mm => mm.sel).sort((a, b) => b.value - a.value)[0], dated) +
+    hl('Top region', best(group(data, D.region, dims.region)), revenue) +
+    hl('Top channel', best(group(data, D.chan, dims.chan)), revenue) +
+    hl('Top bundle', best(group(data, D.bundle, dims.bundle)), revenue);
+}
+
+function pVentas({ data, ok, revenue, months }) {
+  const bundles = desc(group(data, D.bundle, dims.bundle)), prods = desc(group(data, D.prod, dims.prod));
+  treemap($('treeBundle'), bundles, revenue || 1);
+  hbar($('chProd'), prods, moneyC, money, 'of total', 'prod');
+  const dow = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(label => ({ label, value: 0 }));
+  for (const r of ok) if (r[D.date]) dow[(new Date(r[D.date] + 'T00:00:00Z').getUTCDay() + 6) % 7].value += r[D.amt];
+  colChart($('chDow'), dow, { fmt: compact, fmtFull: money, fmtAxis: compact, unit: '' });
+  hbar($('chTicket'), prods.map(p => ({ label: p.label, value: p.n ? p.value / p.n : 0 })).sort((a, b) => b.value - a.value), money, money, '');
+  monthChart($('chTxMonth'), months.map(mm => ({ ...mm, value: mm.n })), { type: 'col', fmtVal: num, fmtFull: num, unit: 'successful transactions' });
+  const bmax = Math.max(1, ...bundles.map(b => b.value));
+  $('tblBundle').innerHTML = '<table><thead><tr><th>Bundle</th><th>Product</th><th class="num">Transactions</th><th class="num">Price</th><th class="num">Revenue</th><th class="num">% of revenue</th><th style="width:22%"></th></tr></thead><tbody>' +
+    bundles.map(b => { const pr = data.find(r => r[D.bundle] === b.i); return `<tr><td>${esc(b.label)}</td><td>${esc(dims.prod[pr[D.prod]])}</td><td class="num">${num(b.n)}</td><td class="num">${b.n ? money(b.value / b.n) : '–'}</td><td class="num">${money(b.value)}</td><td class="num">${pct(b.value / (revenue || 1))}</td><td><div class="mini" style="width:${(b.value / bmax * 100).toFixed(1)}%"></div></td></tr>`; }).join('') + '</tbody></table>';
+}
+
+function pCanales({ data }) {
+  hbar($('chReg'), desc(group(data, D.region, dims.region)), moneyC, money, 'of total', 'region');
+  hbar($('chChan'), desc(group(data, D.chan, dims.chan)), moneyC, money, 'of total', 'chan');
+  stacked($('stChan'), statusBy(data, D.chan, dims.chan));
+  stacked($('stReg'), statusBy(data, D.region, dims.region));
+  const regs = desc(group(data, D.region, dims.region)), chans = desc(group(data, D.chan, dims.chan));
+  const cell = {}; let max = 1;
+  for (const r of data) if (r[D.status] === OK) { const k = r[D.region] + '|' + r[D.chan]; cell[k] = (cell[k] || 0) + r[D.amt]; max = Math.max(max, cell[k]); }
+  $('tblHeat').innerHTML = '<table><thead><tr><th>Region</th>' + chans.map(c => `<th class="num">${esc(c.label)}</th>`).join('') + '<th class="num">Total</th></tr></thead><tbody>' +
+    regs.map(g => '<tr><td>' + esc(g.label) + '</td>' + chans.map(c => { const v = cell[g.i + '|' + c.i] || 0; return `<td class="heat" style="background:color-mix(in srgb, var(--series) ${(v / max * 55).toFixed(0)}%, transparent)" data-tip="<b>${esc(g.label)} · ${esc(c.label)}</b><br>${money(v)}">${num(v)}</td>`; }).join('') + `<td class="num"><b>${num(g.value)}</b></td></tr>`).join('') + '</tbody></table>';
+  bindTips($('tblHeat'));
+}
+
+function pOperacion({ data, revenue, M, per, months }) {
+  const nFail = data.filter(r => r[D.status] === FAIL).length, nRev = data.filter(r => r[D.status] === REV).length;
+  const lost = lostOf(data), reversed = sum(data, r => r[D.status] === REV ? -r[D.amt] : 0), n = data.length || 1;
+  $('opTiles').innerHTML =
+    tile('Failure rate', pct(nFail / n), `${num(nFail)} failed transactions`, delta(per, 'failRate', { pp: true, upGood: false }), spark(M.map(m => m.n ? m.fail / m.n : 0))) +
+    tile('Revenue lost to failures', moneyC(lost), revenue ? `${pct(lost / revenue)} of revenue` : '', delta(per, 'lost', { upGood: false }), spark(M.map(m => m.lost))) +
+    tile('Reversal rate', pct(nRev / n), `${num(nRev)} reversed transactions`) +
+    tile('Reversed amount', moneyC(reversed), revenue ? `${pct(reversed / revenue)} of revenue` : '');
+  $('opDesc').textContent = `Failed transactions / transactions. ⚠ marks those above the ${METAS.failure_threshold_pct}% threshold. Click a bar to filter.`;
+  const regs = failBy(data, D.region, dims.region);
+  rateBars($('rtReg'), regs, 'region');
+  rateBars($('rtChan'), failBy(data, D.chan, dims.chan), 'chan');
+  rateBars($('rtProd'), failBy(data, D.prod, dims.prod), 'prod');
+  const p1 = v => v.toFixed(1) + '%';
+  monthChart($('chFailMonth'), months.map((mm, i) => ({ ...mm, value: M[i].n ? M[i].fail / M[i].n * 100 : 0 })), { type: 'line', fmtVal: p1, fmtFull: p1, fmtAxis: v => v + '%', unit: 'of transactions failed', noDelta: true });
+  $('tblLost').innerHTML = '<table><thead><tr><th>Region</th><th class="num">Transactions</th><th class="num">Failed</th><th class="num">Failure %</th><th class="num">Reversed</th><th class="num">Reversal %</th><th class="num">Revenue lost</th><th class="num">% of lost</th></tr></thead><tbody>' +
+    [...regs].sort((a, b) => b.lost - a.lost).map(g => `<tr><td>${esc(g.label)}</td><td class="num">${num(g.n)}</td><td class="num">${num(g.k)}</td><td class="num">${pct(g.rate)}</td><td class="num">${num(g.rev)}</td><td class="num">${pct(g.rev / g.n)}</td><td class="num">${money(g.lost)}</td><td class="num">${pct(g.lost / (lost || 1))}</td></tr>`).join('') + '</tbody></table>';
+}
+
+function pClientes({ base, data, ok, revenue }) {
+  const cs = custStats(base), ina = cs.filter(c => c.days > METAS.inactivity_days).sort((a, b) => b.rev - a.rev);
+  const by = new Map();
+  for (const r of ok) { const c = by.get(r[D.cust]) || [0, 0]; c[0] += r[D.amt]; c[1]++; by.set(r[D.cust], c); }
+  const list = [...by].sort((a, b) => b[1][0] - a[1][0]);
+  const all = new Set(data.map(r => r[D.cust])).size, n10 = Math.max(1, Math.round(list.length * 0.1));
+  const top10 = sum(list.slice(0, n10), c => c[1][0]);
+  $('custTiles').innerHTML =
+    tile('Customers with a purchase', num(list.length), all ? `${pct(list.length / all)} of the ${num(all)} with any transaction` : '') +
+    tile('Inactive customers', num(ina.length), cs.length ? `${pct(ina.length / cs.length)} have gone more than ${METAS.inactivity_days} days without a purchase` : '') +
+    tile('Purchases per customer', list.length ? (ok.length / list.length).toFixed(1) : '–', 'Successful transactions on average') +
+    tile('Concentration', revenue ? pct(top10 / revenue) : '–', `Of revenue comes from the top 10% of customers (${num(n10)})`);
+  const freq = Array.from({ length: 8 }, (_, i) => ({ label: i === 7 ? '8+' : String(i + 1), tip: i === 7 ? '8 or more purchases' : `${i + 1} purchase${i ? 's' : ''}`, value: 0 }));
+  for (const [, v] of list) freq[Math.min(v[1], 8) - 1].value++;
+  colChart($('chFreq'), freq);
+  share($('shCustSeg'), distinctBy(ok, D.seg, dims.seg), num, 'seg');
+  hbar($('chCustReg'), distinctBy(ok, D.region, dims.region), num, v => num(v) + ' customers', '', 'region');
+  const nuevos = MES.map(label => ({ label, value: 0 }));
+  for (const c of cs) nuevos[+c.first.slice(5, 7) - 1].value++;
+  colChart($('chNew'), nuevos);
+  $('inaDesc').textContent = `More than ${METAS.inactivity_days} days without a purchase as of ${fdate(dates[dates.length - 1])}; top 8 by revenue. Not affected by the month filter.`;
+  $('tblIna').innerHTML = '<table><thead><tr><th>Customer</th><th>Region</th><th>Last purchase</th><th class="num">Days</th><th class="num">Revenue</th></tr></thead><tbody>' +
+    (ina.slice(0, 8).map(c => `<tr><td>${esc(dims.cust[c.id])}</td><td>${esc(dims.region[c.region])}</td><td>${c.last}</td><td class="num">${num(c.days)}</td><td class="num">${money(c.rev)}</td></tr>`).join('') || '<tr><td colspan="5">None</td></tr>') + '</tbody></table>';
+  $('expIna').onclick = () => download('inactive_customers.csv', [['customer', 'region', 'segment', 'first_purchase', 'last_purchase', 'days_since_purchase', 'purchases', 'revenue'],
+    ...ina.map(c => [dims.cust[c.id], dims.region[c.region], dims.seg[c.seg], c.first, c.last, c.days, c.n, c.rev])]);
+  $('tblCust').innerHTML = '<table><thead><tr><th>#</th><th>Customer</th><th class="num">Transactions</th><th class="num">Average ticket</th><th class="num">Revenue</th><th class="num">% of revenue</th></tr></thead><tbody>' +
+    list.slice(0, 10).map(([c, v], i) => `<tr><td>${i + 1}</td><td>${esc(dims.cust[c])}</td><td class="num">${num(v[1])}</td><td class="num">${money(v[0] / v[1])}</td><td class="num">${money(v[0])}</td><td class="num">${pct(v[0] / (revenue || 1))}</td></tr>`).join('') + '</tbody></table>';
+}
+
+// ---------- static ----------
+const dates = rows.map(r => r[D.date]).filter(Boolean).sort();
+const fdate = d => { const [y, m, dd] = d.split('-'); return `${+dd} ${MES[+m - 1]} ${y}`; };
+$('period').textContent = `${fdate(dates[0])} – ${fdate(dates[dates.length - 1])} · Currency: ${METAS.currency_name} (${CUR})`;
+document.querySelectorAll('.cur').forEach(n => { n.textContent = CUR; });
+document.querySelectorAll('.legend.st').forEach(l => { l.innerHTML = '<span><i style="background:var(--good)"></i>Successful</span><span><i style="background:var(--critical)"></i>Failed</span><span><i style="background:var(--serious)"></i>Reversed</span>'; });
+const fm = Object.entries(log.date_formats).filter(([k]) => k !== 'empty' && k !== 'invalid').map(([k, v]) => `${k}: ${num(v)}`).join(' · ');
+$('cleanTiles').innerHTML =
+  tile('Original rows', num(log.rows_in), esc(log.file)) +
+  tile('Duplicates removed', num(log.duplicates_removed), 'Same transaction_id') +
+  tile('Clean rows', num(log.rows_out), 'Basis for the whole report') +
+  tile('Amounts imputed', num(log.amounts_imputed), `${pct(log.amounts_imputed / log.rows_out)} of rows`);
+const cleanRows = [
+  ['Dates normalised to YYYY-MM-DD', log.rows_out - log.dates_missing, fm],
+  ['Empty or impossible dates (left without a date)', log.dates_missing, `${num(log.dates_missing - log.dates_invalid)} empty and ${num(log.dates_invalid)} impossible; only excluded from monthly series`],
+  ['Amounts reformatted', log.amounts_reformatted, 'Currency symbols and codes, commas, spaces, negatives in parentheses'],
+  ['Empty amounts imputed', log.amounts_imputed, "Bundle's list price according to status"],
+  ['Outlier amounts corrected', log.amounts_outliers, 'See the table alongside'],
+  ['Regions unified', log.regions_normalized, 'Aliases and abbreviations'],
+  ['Empty regions', log.regions_empty, 'Marked as "Unknown"'],
+  ['Channels unified', log.channels_normalized, 'To USSD, Agent, Web and Mobile App'],
+  ['Customer IDs fixed', log.customer_id_spaces + log.customer_id_no_prefix, 'Extra spaces and missing CUST prefix'],
+];
+$('tblClean').innerHTML = '<table><thead><tr><th>Rule</th><th class="num">Rows</th><th>Detail</th></tr></thead><tbody>' +
+  cleanRows.map(r => `<tr><td>${r[0]}</td><td class="num">${num(r[1])}</td><td style="color:var(--ink-2)">${esc(r[2])}</td></tr>`).join('') + '</tbody></table>';
+$('tblOut').innerHTML = '<table><thead><tr><th>Transaction</th><th>Bundle</th><th class="num">Original amount</th><th class="num">Corrected</th></tr></thead><tbody>' +
+  (log.outliers.map(a => `<tr><td>${esc(a.transaction_id)}</td><td>${esc(a.bundle)}</td><td class="num">${money(a.original_amount)}</td><td class="num">${money(a.corrected_amount)}</td></tr>`).join('') || '<tr><td colspan="4">None</td></tr>') + '</tbody></table>';
+$('foot').textContent = `EPNexo · Source: ${log.file} (${num(log.rows_out)} clean transactions). Revenue = sum of amounts of successful transactions; failed and reversed ones do not count.`;
+
+$('themeBtn').addEventListener('click', () => {
+  const root = document.documentElement;
+  const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  root.dataset.theme = dark ? 'light' : 'dark';
+});
+let rt; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+go();
+</script>
+</body>
+</html>
