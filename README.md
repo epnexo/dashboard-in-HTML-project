@@ -2,7 +2,7 @@
 
 # Telecom Transactions Report
 
-**From a messy CSV to an interactive dashboard, an Excel workbook and a cleaning report — in about two seconds, with one double-click.**
+**From a messy CSV to an interactive dashboard, a Power Query + Power Pivot workbook and a cleaning report — in under a minute, with one double-click.**
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white)
 ![Dashboard](https://img.shields.io/badge/Dashboard-HTML%20%2B%20CSS%20%2B%20vanilla%20JS-0d9488)
@@ -150,18 +150,36 @@ flowchart LR
 | Output | Description |
 |---|---|
 | [`reports/telecom_report.html`](reports/telecom_report.html) | Single-file dashboard with six pages: Overview, Sales, Channels & regions, Operations, Customers, Data quality. Download it and open it in a browser. |
-| [`reports/telecom_report.xlsx`](reports/telecom_report.xlsx) | Summary (live formulas), Charts, Data and Cleaning sheets. |
+| [`reports/telecom_report.xlsx`](reports/telecom_report.xlsx) | Excel workbook built the Power Query + Power Pivot way: queries, data model with DAX measures, PivotCharts, slicers and CUBEVALUE cards. See [below](#the-excel-workbook-power-query--power-pivot). |
 | [`cleaning/cleaning_report.html`](cleaning/cleaning_report.html) | What was wrong in the source file and what was done about it. |
 | [`cleaning/findings_detail.csv`](cleaning/findings_detail.csv) | Every correction, row by row, with the value before and after. |
 | [`data/clean/`](data/clean) | The cleaned dataset. |
 
+## The Excel workbook: Power Query + Power Pivot
+
+The same script also builds an Excel workbook the way an analyst would by hand, by driving the
+installed Excel:
+
+![Excel dashboard with slicers, KPI cards and PivotCharts](docs/images/excel_dashboard.png)
+
+| Layer | What is in it |
+|---|---|
+| **Power Query** | `SourceFile` (parameter with the path of the clean CSV), `Transactions` (typed columns plus the list price of each bundle) and `Calendar` (one row per day). |
+| **Data model** | Both tables loaded to the model only, related by `Transactions[txn_date]` → `Calendar[Date]`. |
+| **DAX measures** | 16 measures: Revenue, Transaction Count, Success / Failure / Reversal Rate, Average Ticket, Active and Buying Customers, Revenue per Customer, Revenue Lost, Reversed Amount, Revenue MoM %. |
+| **Dashboard sheet** | KPI cards (`CUBEVALUE`), five PivotCharts and five slicers (Region, Segment, Product, Channel, Quarter) wired to every pivot. |
+| **Other sheets** | *Detail* (pivot tables by bundle and region), *Pivots* (feeding the charts), *Cleaning* and *Read me* (queries, refresh steps and every DAX formula). |
+
+Inside Excel, **Data → Refresh All** reloads the clean CSV. If Excel or `pywin32` is not available,
+the script falls back to a simpler workbook with plain formulas and charts.
+
 ## Run it, step by step
 
 1. **Install Python 3.10 or later** on Windows (<https://www.python.org/downloads/>).
-2. **Install the two packages** used for the Excel file:
+2. **Install the packages** used for the Excel file (`pywin32` needs Excel 2016 or later installed):
 
    ```
-   python -m pip install openpyxl pillow
+   python -m pip install pywin32 openpyxl pillow
    ```
 
 3. **Put your CSV in `data/raw/`.** The newest file in that folder is the one processed. It must
@@ -199,7 +217,8 @@ flowchart LR
 run.bat                  double-click launcher
 scripts/
   pipeline.py            cleaning + report generation (standard library only)
-  excel.py               Excel workbook (openpyxl)
+  excel_model.py         Excel workbook with Power Query, data model, pivots and slicers (pywin32)
+  excel.py               fallback Excel workbook with plain formulas (openpyxl)
   app.py                 small desktop window (tkinter)
   report_template.html   dashboard template (HTML + CSS + vanilla JS, no libraries)
   make_demo_au.py        one-off generator of the Australian demo file

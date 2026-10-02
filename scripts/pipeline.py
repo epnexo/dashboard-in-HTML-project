@@ -328,10 +328,21 @@ def run(source=None, notify=print):
         step('3/4 Building HTML report')
         build_report(out, log)
 
+        step('    Building Excel report (Power Query + Power Pivot)')
+        groups, settings = group_findings(findings), load_settings()
         try:
-            from excel import build_excel
-            build_excel(out, log, group_findings(findings), EXCEL, LOGO, load_settings())
-            step('    Excel report built')
+            try:  # preferred: drive the installed Excel to build queries, data model, pivots and slicers
+                from excel_model import build_excel_model
+                build_excel_model(clean_path, out, log, groups, EXCEL, LOGO, settings)
+                step('    Excel report built with Power Query and the data model')
+            except PermissionError:
+                raise
+            except Exception as ex:  # no Excel, no pywin32, or Excel refused: fall back to a plain workbook
+                reason = 'pywin32 is missing (python -m pip install pywin32)' if isinstance(ex, ImportError) else type(ex).__name__
+                step(f'    WARNING: could not use Excel for the data-model version ({reason}); building the simple workbook')
+                from excel import build_excel
+                build_excel(out, log, groups, EXCEL, LOGO, settings)
+                step('    Excel report built (formulas only, no Power Query)')
         except ImportError:
             step('    WARNING: Excel not built; openpyxl is missing (python -m pip install openpyxl)')
         except PermissionError:
